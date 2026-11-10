@@ -1,4 +1,5 @@
 # Maintainer:  Vitalii Kuzhdin <vitaliikuzhdin@gmail.com>
+# Contributor: Radim Vančo (FoxKyong) <radim.vanco@jifox.cz>
 
 _sdk=8.0
 _Name="PixiEditor"

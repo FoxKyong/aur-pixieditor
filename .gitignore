@@ -4,3 +4,4 @@
 !.gitignore
 !.nvchecker.toml
 !*.desktop
+!README.md
