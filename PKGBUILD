@@ -3,7 +3,7 @@
 _sdk=8.0
 _Name="PixiEditor"
 pkgname="${_Name,,}"
-pkgver=2.1.0.23
+pkgver=2.1.2.5
 pkgrel=1
 pkgdesc="All-in-one solution for 2D image editing"
 arch=(
@@ -37,7 +37,7 @@ source=(
   "${_pkgsrc}-Drawie::git+https://github.com/PixiEditor/Drawie.git"
   "${_pkgsrc}-ColorPicker::git+https://github.com/PixiEditor/ColorPicker.git"
 )
-b2sums=('bcfc0db42413fa56494a4a92cd483a8d34166118a6b0a672fd308c1bea5eea83b5594454015506df8ad78c608b7b234c82692b0d174f5929d468c3c2f89b19cd'
+b2sums=('cd6076ecb528eaec00f4c487dd53b5d797a5d6333098ba8bb72879a2ca20836988e14c2297160bff02d91aa8985d4b9d47839b1f56caf470b0342e32123dab68'
         'SKIP'
         'SKIP'
         'SKIP'
@@ -57,9 +57,15 @@ _source() {
 
 prepare() {
   _source
+  # Restore with the same configuration as the publish in build(): in Debug
+  # the projects also pull Avalonia.Diagnostics at $(AvaloniaVersion), and
+  # PixiEditor's feed has no Avalonia.Diagnostics for the pinned CI build
+  # (11.3.12-cibuild0004211-alpha), so NuGet picks 11.3.12 from nuget.org
+  # and fails with NU1605 (package downgrade of Avalonia).
   local dotnet_options=(
     --runtime "linux-${_msarch}"
     --locked-mode
+    -p:Configuration=Release
   )
 
   cd "${srcdir}/${_pkgsrc}"
