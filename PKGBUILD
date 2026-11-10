@@ -1,7 +1,11 @@
 # Maintainer:  Vitalii Kuzhdin <vitaliikuzhdin@gmail.com>
 # Contributor: Radim Vančo (FoxKyong) <radim.vanco@jifox.cz>
 
-_sdk=8.0
+# _net: target framework and runtime; _sdk: SDK used to build. PixiEditor's
+# source generators need Roslyn >= 4.11, which Arch's source-built 8.0 SDK
+# (8.0.1xx, Roslyn 4.8) does not have, so build net8.0 with the 10.0 SDK.
+_net=8.0
+_sdk=10.0
 _Name="PixiEditor"
 pkgname="${_Name,,}"
 pkgver=2.1.2.5
@@ -17,13 +21,14 @@ license=(
   'LGPL-3.0-or-later'
 )
 depends=(
-  "dotnet-runtime-${_sdk}"
+  "dotnet-runtime-${_net}"
   'ffmpeg'
   'hicolor-icon-theme'
   'xdg-utils'
 )
 makedepends=(
-  "dotnet-sdk-${_sdk}-bin"
+  "dotnet-sdk-${_sdk}"
+  "dotnet-targeting-pack-${_net}"
   'git'
 )
 options=(
@@ -77,6 +82,19 @@ prepare() {
   git config submodule.src/ColorPicker.url "${srcdir}/${_pkgsrc}-ColorPicker"
   git -c protocol.file.allow=always submodule update
 
+  # Upstream's src/global.json pins SDK 8.0.405 with rollForward=latestMinor,
+  # which never selects another major version, so point it at the SDK from
+  # makedepends (see _sdk above).
+  cat > src/global.json <<EOF
+{
+  "sdk": {
+    "version": "${_sdk}.100",
+    "rollForward": "latestFeature",
+    "allowPrerelease": false
+  }
+}
+EOF
+
   dotnet restore "${dotnet_options[@]}" ./"src/${_Name}.Desktop"
 
   cd "assets/flatpak"
@@ -88,7 +106,7 @@ build() {
   _source
   local dotnet_options=(
     --configuration Release
-    --framework "net${_sdk}"
+    --framework "net${_net}"
     # --no-restore # TODO
     --output build
     --no-self-contained
@@ -96,6 +114,10 @@ build() {
     # --verbosity detailed
     -p:DebugType=None
     -p:DebugSymbols=false
+    # The projects use LangVersion=latest; with the 10.0 SDK that is C# 14,
+    # where array.Reverse() binds to the in-place Span overload (void) and
+    # breaks the build. Pin the language the code is written for.
+    -p:LangVersion=12
   )
 
   cd "${srcdir}/${_pkgsrc}"
